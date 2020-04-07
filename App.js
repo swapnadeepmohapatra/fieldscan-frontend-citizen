@@ -1,11 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Text, View, StyleSheet, Button } from "react-native";
+import { Text, View, StyleSheet, Button, Dimensions } from "react-native";
 import { BarCodeScanner } from "expo-barcode-scanner";
 import { getFirebase } from "./firebase";
 
 export default function App() {
   const [hasPermission, setHasPermission] = useState(null);
-  const [scanned, setScanned] = useState(false);
+  const [scanned, setScanned] = useState(true);
+
+  var placeData = {
+    _id: "5e8b080abc09a25d8019ec64",
+    address: "Viman Nagar",
+    category: "restaurants",
+    name: "Chai Break",
+  };
+
+  // var placeData = {
+  //   _id: "5e8b080abc09a25d8016fd56",
+  //   address: "Colaba, Mumbai",
+  //   category: "mall",
+  //   name: "H&M",
+  // };
 
   useEffect(() => {
     (async () => {
@@ -15,9 +29,6 @@ export default function App() {
   }, []);
 
   const createNewVisit = (data) => {
-    const placeId = "5e8b080abc09a25d8019ec64";
-    var placeData;
-
     var today = new Date();
     var date =
       today.getFullYear() +
@@ -28,15 +39,6 @@ export default function App() {
     var time =
       today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
     var dateTime = date + " " + time;
-    // Getting Place Data
-    getFirebase()
-      .database()
-      .ref("/places")
-      .child(placeId)
-      .on("value", (dataSnapshot) => {
-        console.log(dataSnapshot.val());
-        placeData = dataSnapshot.val();
-      });
 
     // Add time to the datas
     placeData["visitTime"] = dateTime;
@@ -45,12 +47,17 @@ export default function App() {
     // Put User Data
     getFirebase()
       .database()
-      .ref("/visits")
-      .child("5e8b080abc09a25d8019ec64")
+      .ref("/places")
+      .child(placeData._id)
+      .child("visits")
       .push(data);
 
-    // Put place Data
-    getFirebase().database().ref("/visits").child(data._id).push(placeData);
+    getFirebase()
+      .database()
+      .ref("/users")
+      .child(data._id)
+      .child("visits")
+      .push(placeData);
   };
 
   const handleBarCodeScanned = ({ type, data }) => {
@@ -86,7 +93,26 @@ export default function App() {
       )}
 
       {scanned && (
-        <Button title={"Tap to Scan"} onPress={() => setScanned(false)} />
+        <View
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text style={{ fontSize: 18 }}>ID: {placeData._id}</Text>
+          <Text style={{ fontSize: 24 }}>Place Name: {placeData.name}</Text>
+          <Text style={{ fontSize: 24 }}>Address: {placeData.address}</Text>
+          <Text style={{ fontSize: 24, marginBottom: 50 }}>
+            Category: {placeData.category}
+          </Text>
+
+          <Button
+            color="green"
+            title={"Tap to Scan"}
+            onPress={() => setScanned(false)}
+          />
+        </View>
       )}
     </View>
   );
